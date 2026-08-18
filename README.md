@@ -169,9 +169,13 @@ against `settings.json.sample` if a release mentions permission changes. For
 `CLAUDE.md`, replace the existing luroConnect block rather than appending a second
 copy: it starts at `# luroConnect build & deploy (Magento 2)` and runs to the end.
 
-## Support
+## Contributing and support
 
-For build or deploy failures, contact luroConnect support with the **taskid** — it
-identifies the run on our side, and a pasted log fragment usually does not.
+**This repository is published from luroConnect's internal source. It is a mirror.**
+Pull requests opened here cannot be merged — the next publish would overwrite them.
+That is not a judgement on the change, just how this repo is produced.
 
-For problems with the kit itself, open an issue here.
+- **Something wrong or missing in the kit?** Open an issue here, or tell luroConnect
+  support. Either reaches us, and the fix flows back out in the next release.
+- **A build or deploy failed?** Contact luroConnect support with the **taskid** — it
+  identifies the run on our side, and a pasted log fragment usually does not.
