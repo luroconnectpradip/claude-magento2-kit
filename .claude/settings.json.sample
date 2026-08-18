@@ -1,0 +1,35 @@
+{
+  "$comment": [
+    "luroConnect developer kit -- permission profile.",
+    "",
+    "  cp .claude/settings.json.sample .claude/settings.json",
+    "  git add .claude/settings.json && git commit",
+    "",
+    "Claude may start builds and read logs without asking. A build never touches the",
+    "live site -- it produces a release tarball on the server and nothing else.",
+    "",
+    "lc-deploy.sh is deliberately NOT in the allow list, so every deploy prompts you.",
+    "The script additionally refuses without --yes, and refuses production without",
+    "--prod-confirm, so an accidental production deploy needs three separate things",
+    "to go wrong."
+  ],
+  "permissions": {
+    "allow": [
+      "Bash(./.claude/skills/luroconnect-m2/scripts/lc-status.sh:*)",
+      "Bash(.claude/skills/luroconnect-m2/scripts/lc-status.sh:*)",
+      "Bash(./.claude/skills/luroconnect-m2/scripts/lc-build.sh:*)",
+      "Bash(.claude/skills/luroconnect-m2/scripts/lc-build.sh:*)",
+      "Bash(git ls-files:*)",
+      "Bash(git check-ignore:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(composer validate:*)"
+    ],
+    "deny": [
+      "Read(./app/etc/env.php)",
+      "Read(./auth.json)",
+      "Read(./.env)"
+    ]
+  }
+}

@@ -1,0 +1,111 @@
+<!--
+  luroConnect developer kit — Magento 2.
+
+  INSTALL
+    1. Copy this file's contents into your repo's CLAUDE.md (create it at the repo
+       root if you don't have one). If you already have a CLAUDE.md, append this
+       whole block to the end of it.
+    2. Copy the `.claude/` folder from the kit into your repo root, so you end up
+       with `.claude/skills/luroconnect-m2/`.
+    3. Fill in the CONFIGURATION block below.
+    4. Install the permission profile and commit it — it is a team-wide setting.
+         cp .claude/settings.json.sample .claude/settings.json
+       This lets Claude start builds and read logs on its own. Deploys always
+       prompt, and production deploys need an extra explicit confirmation.
+    5. Only if you use the REST API: put your token in your shell, never in the repo.
+         export LC_TOKEN='<jwt from luroConnect>'
+       Add it to ~/.zshrc or ~/.bashrc, not to any file under version control.
+-->
+
+# luroConnect build & deploy (Magento 2)
+
+## CONFIGURATION — fill this in
+
+- `LC_ENV_NAME`: **TODO** — your environment name from the luroConnect CI/CD
+  dashboard, e.g. `M2_4`. Ask luroConnect if you don't know it.
+
+## How code reaches the server
+
+This repository is built and deployed by luroConnect. Code reaches staging and
+production **only** through: commit to git → luroConnect builds a release tarball →
+deploy swaps the docroot symlink to the new release folder.
+
+A release folder is immutable and disposable. **Anything changed by hand on the
+server is silently discarded by the next deploy.**
+
+## Rules — these override generic Magento advice
+
+1. **Never** tell the user to run `bin/magento module:enable`/`module:disable`,
+   `setup:upgrade`, `config:set`, `app:config:dump`, `setup:di:compile`,
+   `setup:static-content:deploy`, `composer require`, or `composer install` **on the
+   staging or production server**. Those are local-development or build-time actions.
+   On the server they either do nothing durable or break the next build.
+   *Exception:* luroConnect operators run some of these through their own tooling.
+   That is not something to instruct a developer to do.
+
+2. **`app/etc/config.php` is tracked in git** and is the source of truth for the
+   module list. To enable or disable a module: run `bin/magento module:enable X`
+   **on your local machine**, then commit the resulting `config.php` diff. Never add
+   `app/etc/config.php` to `.gitignore`.
+
+3. **`config.php.build` holds themes, scopes and system configuration** that
+   `setup:static-content:deploy` needs at build time. Any setting that changes
+   generated static content (CSS minification, JS bundling, merge, theme assignment)
+   must live here — setting it in the admin will not survive a build.
+
+   **It is often not in git.** luroConnect usually maintains it on the server, and its
+   absence from the repository is normal and correct — never "fix" that by creating
+   one. If a server-side copy exists it silently overwrites any committed one, so
+   committing changes to it may do nothing. To change a build setting, first find out
+   who owns the file; if luroConnect does, ask us. Load the `luroconnect-m2` skill.
+
+4. A key present in **both** `config.php` and `config.php.build` with **different**
+   values fails the build:
+   `ERROR: Conflicts found between config.php and config.php.build:`
+   The fix is to remove that key from `config.php`, which should hold only `modules`.
+   Load the `luroconnect-m2` skill.
+
+5. **`app/etc/env.php` is never in git.** It holds per-environment DB, Redis and
+   crypt-key settings and is injected at deploy time from the server. The build
+   deletes any copy it finds. Never commit it, never propose editing it in a PR, and
+   never read secrets from it.
+
+6. **Never commit**: `vendor/`, `generated/`, `pub/static/*`, `var/`, `pub/media/`,
+   `auth.json`, `id_rsa`, `.env`. The build generates or supplies all of these.
+
+7. **`composer.json` and `composer.lock` are both committed and must be in sync.**
+   The build may run `composer validate --check-lock` and fail on drift. After any
+   dependency change, commit the updated lock file.
+
+8. **The build normally runs in Docker with no database.** `setup:di:compile` and
+   `setup:static-content:deploy` execute without a live Magento DB. Code — especially
+   in `di.xml`, plugins, or theme build steps — that queries the database while
+   compiling will fail the build.
+
+9. **Never suggest `chmod 777` or other promiscuous permissions.** The build packages
+   with restricted modes and deploy owns file ownership and permissions. Permission
+   problems are a luroConnect support question, not something to fix with `chmod`.
+
+10. **`setup:upgrade` is a deploy option, not a routine step.** It runs only when a
+    deploy explicitly requests it, and it puts the site in **full maintenance for its
+    entire duration**. Batch DB schema changes into as few deploys as possible.
+
+11. **Rollback is a redeploy**, not a git revert on the server: deploy the previous
+    commit id, whose release folder is still on disk.
+
+## Commands available in this repo
+
+Type `/` to see them:
+
+- `/lc-build [staging|prod]` — build this repo on luroConnect and wait for the result
+- `/lc-status <taskid>` — check or wait on a running build or deploy
+- `/lc-deploy <commit-id> [staging|prod]` — deploy a built release
+- `/lc-check` — verify this repo is set up correctly for the pipeline
+
+Plain English works too: "build staging and tell me the commit id".
+
+## When any of this comes up
+
+Load the `luroconnect-m2` skill. It has the exact recipes for `config.php.build`, the
+REST API for triggering and monitoring builds, a build-failure decision table, and
+the deploy options.
